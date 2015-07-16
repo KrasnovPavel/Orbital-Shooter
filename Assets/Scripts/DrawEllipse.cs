@@ -10,48 +10,53 @@ public class DrawEllipse : MonoBehaviour {
 	Rigidbody rigidBody;
 
 	void Start () {
-		rigidBody = GameObject.Find("Sphere").GetComponent<Rigidbody>();
+		rigidBody = GameObject.Find("MainBody").GetComponent<Rigidbody>();
 		lineRenderer = GetComponent<LineRenderer>();
 		lineRenderer.SetVertexCount (resolution+1);
+	}
+
+	void Update() {
+		CalculateEllipse();
 	}
 
 	public void CalculateEllipse() {
 		Vector3 Rv = rigidBody.position;
 		Vector3 Vv = rigidBody.velocity;
 		Vector3 Hv = Vector3.Cross(Rv, Vv);
-		Vector3 Nv = Vector3.Cross(Vector3.forward, Hv);
+		Vector3 Nv = Vector3.Cross(Vector3.up, Hv);
 		float V2 = Vv.magnitude*Vv.magnitude;
 		Vector3 ev = ((V2 - 1/Rv.magnitude)*Rv - Vector3.Dot(Rv, Vv)*Vv)/mu;
 		float e = ev.magnitude;
-		float r = Rv.magnitude;
 		float a;
 		if (!Mathf.Approximately(e, 1f)) {
 				a = -1/(V2-2*mu/Rv.magnitude);
 			} else {
 				a = Mathf.Infinity;
 			}
-		float i =270f - Mathf.Acos(Hv.z / Hv.magnitude)  * Mathf.Rad2Deg;
-		float theta = 180f - Mathf.Acos(Nv.x / Nv.magnitude)  * Mathf.Rad2Deg;
-		if (Nv.y < 0f) {
-   			theta = 360f - theta;
-   		}
-		float w = Mathf.Acos(Vector3.Dot(Nv ,ev) / (Nv.magnitude * e)) * Mathf.Rad2Deg;
-		if (ev.z < 0f){
+		float i = Mathf.Acos(Hv.y / Hv.magnitude)  * Mathf.Rad2Deg;
+		float theta = Mathf.Acos(Nv.z / Nv.magnitude)  * Mathf.Rad2Deg;
+		if (Mathf.Approximately (i, 0f)) {
+			theta = 0f;
+		}
+		if (Nv.x < 0f) {
+			theta = 360f - theta;
+		}
+		float w =180f + Mathf.Acos(Vector3.Dot(Nv, ev) / (Nv.magnitude * e)) * Mathf.Rad2Deg;
+		if (ev.y < 0f){
 			w = 360f - w;
 		}
-
 		NewEllipse(a, e, i, theta, w);
 	}
 
 	void NewEllipse (float a, float e, float i, float theta, float w) {
-		Vector3 center = new Vector3 (a * e, 0f, 0f);
-		Quaternion roti = Quaternion.Euler(new Vector3 (i, 0f, 0f));
-		Quaternion rotw = Quaternion.Euler(new Vector3 (0f, 0f, w));
-		Quaternion rottheta = Quaternion.Euler(new Vector3 (0f, 0f, theta));
-		Quaternion rotation = new Quaternion();
-		rotation = rotw;
+		Vector3 center = new Vector3 (0f, 0f, a * e);
+		Quaternion roti = Quaternion.Euler(new Vector3 (0f, 0f, i));
+		Quaternion rotw = Quaternion.Euler(new Vector3 (0f, w, 0f));
+		Quaternion rottheta = Quaternion.Euler(new Vector3 (0f, theta, 0f));
+		Quaternion rotation;
+		rotation = rottheta;
 		rotation *= roti;
-		rotation *= rottheta;
+		rotation *= rotw;
 
 		center = rotation * center;
 
@@ -59,7 +64,7 @@ public class DrawEllipse : MonoBehaviour {
 		Vector3 position;
 		for (int j = 0; j <= resolution; j++) {
 			float angle = (float)j / (float)resolution * 2.0f * Mathf.PI;
-			position = new Vector3(a * Mathf.Cos (angle), 0f , b * Mathf.Sin (angle));
+			position = new Vector3(b * Mathf.Cos (angle), 0f , a * Mathf.Sin (angle));
 			lineRenderer.SetPosition(j, rotation * position + center);
 		}
 	}
